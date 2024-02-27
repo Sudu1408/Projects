@@ -1,0 +1,798 @@
+---
+title: "CSIS3360-Project"
+author: "300360903 - 300353099"
+date: "2023-08-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+#STEP 1 - Load all the necessary libraries
+```{r}
+
+library(stringr)
+library(data.table)
+library(MASS)
+
+```
+
+
+#STEP 2 -Read and Process the data
+```{r}
+
+salaries_df <- read.csv("salaries.csv", header = TRUE, sep = ",")
+
+head(salaries_df)
+
+
+
+```
+
+change 'Year' column to chr data type
+'ConvertedComp' column to int data type
+```{r}
+
+salaries_df$Year <- as.character(salaries_df$Year)
+
+salaries_df$ConvertedComp <- as.integer(salaries_df$ConvertedComp)
+
+salaries_df_copy <- salaries_df
+
+
+```
+
+
+================================================================================
+================================================================================
+================================================================================
+================================================================================
+================================================================================
+
+
+                            
+                                REGRESSION
+
+
+#PART 1 - Regression (salary prediction)
+
+
+Job satisfaction cannot predict salary...
+Salary determines how satisfied a person is, in their job...
+
+```{r}
+
+salaries_df <- subset(salaries_df, select = -c(JobSat))
+
+head(salaries_df)
+
+```
+
+##Change all column names to lower case
+```{r}
+
+colnames(salaries_df) <- tolower(colnames(salaries_df))
+
+head(salaries_df)
+
+```
+
+================================================================================
+
+##Process Categorical columns
+
+--------------------------------------------------------------------------------
+Change 'hobbyist' column to have yes or no values...
+```{r}
+
+hobby <- function(x){
+  if (str_sub(x, end = 3) == "Yes")
+  {
+    return ("yes")
+  }
+  else if (str_sub(x, end = 2) == "No")
+  {
+    return ("no")
+  }
+}
+
+salaries_df$hobbyist <- sapply(salaries_df$hobbyist,hobby)
+
+```
+
+
+```{r}
+
+table(salaries_df$hobbyist)
+
+```
+
+--------------------------------------------------------------------------------
+Change 'country' column to have north america or other as values
+
+..This is because the salaries are converted to US dollars and are
+higher in the north american continent, compared to other places..
+[United States, Canada] -- North America
+[Every other value] -- Other
+```{r}
+
+country <- function(x){
+  if (x == "United States" || x == "Canada")
+  {
+    return ("North_America")
+  }
+  else
+  {
+    return ("Other")
+  }
+}
+
+salaries_df$country <- sapply(salaries_df$country, country)
+
+```
+
+
+```{r}
+
+table(salaries_df$country)
+
+```
+
+--------------------------------------------------------------------------------
+Change 'edlevel' column to have
+[Bachelor's degree] -- Bachelors
+[Master's degree] -- Masters
+[Doctoral degree] -- PhD
+[Other degree values] -- Other
+[No formal education] -- No_education
+```{r}
+
+edlevel <- function(x) {
+  if (x %in% c("Associate degree", "Professional degree")) 
+  {
+    return ("Certificate_studies")
+  } 
+  else if (x == "Bachelor's degree") 
+  {
+    return ("Bachelors")
+  } 
+  else if (x == "Master's degree") 
+  {
+    return ("Masters")
+  } 
+  else if (x == "Doctoral degree") 
+  {
+    return ("PhD")
+  } 
+  else 
+  {
+    return ("No_professional_education")
+  }
+}
+
+salaries_df$edlevel <- sapply(salaries_df$edlevel, edlevel)
+
+```
+
+
+```{r}
+
+table(salaries_df$edlevel)
+
+```
+
+--------------------------------------------------------------------------------
+Change 'employment' column to have
+[Employed full-time] -- full_time
+[Employed part-time] -- part_time
+[every other value] -- self_employed
+```{r}
+
+employment <- function(x) {
+  if (x == "Employed full-time") 
+  {
+    return ("full_time")
+  } 
+  else if (x == "Employed part-time") 
+  {
+    return ("part_time")
+  } 
+  else 
+  {
+    return ("self_employed")
+  }
+}
+
+salaries_df$employment <- sapply(salaries_df$employment, employment)
+
+```
+
+
+```{r}
+
+table(salaries_df$employment)
+
+```
+
+--------------------------------------------------------------------------------
+change 'orgsize' column to have
+[0-100 employees] -- small
+[100-1000 employees] -- medium
+[>1000 employees] -- large
+[every other value] -- unknown
+```{r}
+
+orgsize <- function(x) {
+  if (x %in% c("20 to 99 employees", "2 to 9 employees", "10 to 19 employees", "Just me - I am a freelancer, sole proprietor, etc.")) 
+  {
+    return ("small")
+  } 
+  else if (x %in% c("100 to 499 employees", "500 to 999 employees")) 
+  {
+    return ("medium")
+  } 
+  else if ( x %in% c("I don't know", "I prefer not to answer", "0"))
+  {
+    return ("unknown")
+  }
+  else 
+  {
+    return ("large")
+  }
+}
+
+salaries_df$orgsize <- sapply(salaries_df$orgsize, orgsize)
+
+```
+
+```{r}
+
+table(salaries_df$orgsize)
+
+```
+
+--------------------------------------------------------------------------------
+
+change 'undergradmajor' column to have
+
+[Computer science,Information systems,
+Computer engineering or electrical/electronics engineering,
+Computer programming or Web development] -- Relevant_to_job
+
+[100-1000 employees] -- Not_relevant
+```{r}
+
+undergrad <- function(x) {
+  if (x %in% c("Computer science", "Information systems", "Computer engineering or electrical/electronics engineering", "Computer programming or Web development")) 
+  {
+    return ("Relevant_to_Job")
+  } 
+  else
+  {
+    return ("Not_Relevant")
+  }
+}
+
+salaries_df$undergradmajor <- sapply(salaries_df$undergradmajor, undergrad)
+
+```
+
+```{r}
+
+table(salaries_df$undergradmajor)
+
+```
+
+--------------------------------------------------------------------------------
+
+change 'yearscodepro' column to have
+
+[<=5] -- beginner
+[5-10] -- associate
+[10-15] -- senior
+[>15] -- expert
+```{r}
+
+experience <- function(x) {
+  if (x <= 5) {
+    return ("beginner")
+  } 
+  else if (x > 5 && x <= 10) 
+  {
+    return ("associate")
+  } 
+  else if (x >= 10 && x < 15) 
+  {
+    return ("senior")
+  } 
+  else 
+  {
+    return("expert")
+  }
+}
+
+salaries_df$yearscodepro <- sapply(salaries_df$yearscodepro, experience)
+
+```
+
+```{r}
+
+table(salaries_df$yearscodepro)
+
+```
+
+
+```{r}
+
+head(salaries_df)
+
+```
+
+##Separate categorical columns and create dummies
+```{r}
+
+categorical_cols <- subset(salaries_df, select = -c(3,10,11,12,13))
+
+cat_cols_dummy <- model.matrix(~., data = categorical_cols)
+
+cat_cols_dummy <- subset(cat_cols_dummy, select = -c(1))
+
+head(cat_cols_dummy)
+
+```
+
+##Combine dummies with df
+```{r}
+
+final_regression_df <- cbind(subset(salaries_df, select = c(3,10,11,12,13)),cat_cols_dummy)
+
+head(final_regression_df)
+
+```
+
+#Explanatory Model - Regression
+```{r}
+
+options(scipen = 99)
+#To suppress scientific notations...
+
+linear_reg <- lm(convertedcomp ~. , data = final_regression_df)
+
+summary(linear_reg)
+
+```
+
+================================================================================
+
+##Interpretation:
+Coefficients for each variables shows how they are associated with
+'convertedcomp' as explained below:
+
+--------------------------------------------------------------------------------
+
+SIGNIFICANCE : Looking at the p-values, all the factors are shown to be 
+statistically significant in determining the salary of an individual. 
+But, out of the given factors, an individual not having any formal education 
+does not have as much significance as the other factors...So, it is unlikely 
+to have occurred by random chance.
+
+--------------------------------------------------------------------------------
+
+SIGN :
+data_scientist - Positively Associated
+database.administrator - Negatively Associated
+data_analyst - Negatively Associated
+data_engineer - Positively Associated
+year2018 - Positively Associated
+year2019 - Positively Associated
+year2020 - Positively Associated
+hobbyistyes - Positively Associated
+countryOther - Negatively Associated
+edlevelCertificate_studies - Negatively Associated
+edlevelMasters - Positively Associated
+edlevelNo_professional_education - 
+edlevelPhD - Positively Associated
+employmentpart_time - Negatively Associated
+employmentself_employed - Positively Associated
+orgsizemedium - Negatively Associated
+orgsizesmall - Negatively Associated
+orgsizeunknown - Negatively Associated
+undergradmajorRelevant_to_Job - Negatively Associated
+yearscodeprobeginner - Negatively Associated
+yearscodeproexpert - Positively Associated
+yearscodeprosenior - Positively Associated
+
+
+
+--------------------------------------------------------------------------------
+
+SIZE :
+
+- being a data_scientist increases salary by $3736.10 from the average...
+- being a database.administrator decreases salary by $5115.30 from the average...
+- being a data_analyst decreases salary by $4890.70 from the average...
+- being a data_engineer increases salary by $8473.50 from the average...
+- compared to 2017 the average salary in the year 2018 was higher by $8732.50...
+- compared to 2017 the average salary in the year 2019 was higher by $7539.80...
+- compared to 2017 the average salary in the year 2020 was higher by $6926.70...
+- if the person codes outside of work as hobby, he tends to have a salary of
+  $2909.80 more than someone who does not...
+- A person employed outside the United States or Canada on an average tend to
+  have a salary of $48,913.30 less... This reflects the highly competitive 
+  salaries in the North American continent...
+- A person who completed only certifications tends to have a salary of $8238 less
+  than somebody who completed their Bachelors Degree....
+- A person who completed a Masters Degree tends to have a salary of $6270.50 more
+  than somebody who completed their Bachelors Degree....
+- A person who completed no formal education tends to have a salary of $2181.60 less
+  than somebody who completed their Bachelors Degree.... 
+- A person who completed a Doctoral Degree tends to have a salary of $16,042.30 more
+  than somebody who completed their Bachelors Degree....
+- A person who is employed Part-Time tends to have a salary of $16,056 less
+  than somebody who is employed Full-Time....
+- A person who is self-employed tends to have a salary of $8570.40 more
+  than somebody who is employed Full-Time....
+- A person who is employed in a medium size organization tends to have a salary 
+  of $5298.10 less than somebody who is employed in a large organization....
+- A person who is employed in a small size organization tends to have a salary 
+  of $8359.30 less than somebody who is employed in a large organization....
+- A person who does not know the size of his/her organization tends to have a salary 
+  of $9695.80 less than somebody who is employed in a large organization....
+- A person who’s undergrad major was relevant to the job, tends to earn
+  $3083 less on average compared to someone with an irrelevant degree...
+  This does not make sense in the real world but might be because a person
+  with an irrelevant degree is hired into a technical job because of his/her
+  domain expertise, which is valued more than technical knowledge in the 
+  Data field.
+- A beginner with less than 5 years of experience earns $17,824.10 less than 
+  an associate with 5-10 years of experience...
+- An expert with more than 15 years of experience earns $25,077.40 more than 
+  an associate with 5-10 years of experience...
+- A senior with 10-15 years of experience earns $11,901.10 more than an 
+  associate with 5-10 years of experience...
+
+
+
+Except for the coefficient for the column 'undergradmajorRelevant_to_Job' being 
+negatively associated, every other factors' coefficient makes sense in the real 
+world. But, the accuracy of the model tends to be low, because even when all the 
+factors are the same, the salary tends to vary a lot in the real world. This makes
+it difficult for prediction.
+
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
+#Perform prediction using Linear Regression Model
+
+Since we are Data Analysts, we predict the salary for a beginner
+data analyst in North America in the year 2019 as it was the year before covid
+
+```{r}
+
+data_analyst_beginner <- data.frame(data_scientist = 0,
+                          database.administrator = 0,
+                          data_analyst = 1,
+                          data_engineer = 0,
+                          year2018 = 0,
+                          year2019 = 1,
+                          year2020 = 0,
+                          hobbyistyes = 1,
+                          countryOther = 0,
+                          edlevelCertificate_studies = 0,
+                          edlevelMasters = 1,
+                          edlevelNo_professional_education = 0,
+                          edlevelPhD = 0,
+                          employmentpart_time = 0,
+                          employmentself_employed = 0,
+                          orgsizemedium = 0,
+                          orgsizesmall = 0,
+                          orgsizeunknown = 0,
+                          undergradmajorRelevant_to_Job = 0,
+                          yearscodeprobeginner = 1,
+                          yearscodeproexpert = 0,
+                          yearscodeprosenior = 0
+                          )
+
+
+predicted_salary <- predict(linear_reg, data_analyst_beginner, interval = "prediction",
+                        level = 0.05)
+
+predicted_salary
+
+```
+
+A beginner Data Analyst with the above given specifications is predicted to 
+have a salary of $89,841.33.
+
+--------------------------------------------------------------------------------
+
+```{r}
+
+data_analyst_beginner_selfEmp <- data.frame(data_scientist = 0,
+                          database.administrator = 0,
+                          data_analyst = 1,
+                          data_engineer = 0,
+                          year2018 = 0,
+                          year2019 = 1,
+                          year2020 = 0,
+                          hobbyistyes = 1,
+                          countryOther = 0,
+                          edlevelCertificate_studies = 0,
+                          edlevelMasters = 1,
+                          edlevelNo_professional_education = 0,
+                          edlevelPhD = 0,
+                          employmentpart_time = 0,
+                          employmentself_employed = 1,
+                          orgsizemedium = 0,
+                          orgsizesmall = 0,
+                          orgsizeunknown = 0,
+                          undergradmajorRelevant_to_Job = 0,
+                          yearscodeprobeginner = 1,
+                          yearscodeproexpert = 0,
+                          yearscodeprosenior = 0
+                          )
+
+
+predicted_salary <- predict(linear_reg, data_analyst_beginner_selfEmp, interval = "prediction",
+                        level = 0.05)
+
+predicted_salary
+
+```
+
+If he/she lands a contract job, or works as a Data Analytics consultant,
+and has expert knowledge without the experience, the salary is predicted 
+to be $98,411.69.
+
+
+--------------------------------------------------------------------------------
+
+```{r}
+
+data_analyst_associate <- data.frame(data_scientist = 0,
+                          database.administrator = 0,
+                          data_analyst = 1,
+                          data_engineer = 0,
+                          year2018 = 0,
+                          year2019 = 1,
+                          year2020 = 0,
+                          hobbyistyes = 1,
+                          countryOther = 0,
+                          edlevelCertificate_studies = 0,
+                          edlevelMasters = 1,
+                          edlevelNo_professional_education = 0,
+                          edlevelPhD = 0,
+                          employmentpart_time = 0,
+                          employmentself_employed = 0,
+                          orgsizemedium = 0,
+                          orgsizesmall = 0,
+                          orgsizeunknown = 0,
+                          undergradmajorRelevant_to_Job = 0,
+                          yearscodeprobeginner = 0,
+                          yearscodeproexpert = 0,
+                          yearscodeprosenior = 0
+                          )
+
+
+predicted_salary <- predict(linear_reg, data_analyst_associate, interval = "prediction",
+                        level = 0.05)
+
+predicted_salary
+
+```
+
+After around 5 years of experience his salary is predicted to 
+be $107,665,50.
+
+--------------------------------------------------------------------------------
+
+```{r}
+
+data_analyst_beginner_outOfCountry <- data.frame(data_scientist = 0,
+                          database.administrator = 0,
+                          data_analyst = 1,
+                          data_engineer = 0,
+                          year2018 = 0,
+                          year2019 = 1,
+                          year2020 = 0,
+                          hobbyistyes = 1,
+                          countryOther = 1,
+                          edlevelCertificate_studies = 0,
+                          edlevelMasters = 1,
+                          edlevelNo_professional_education = 0,
+                          edlevelPhD = 0,
+                          employmentpart_time = 0,
+                          employmentself_employed = 0,
+                          orgsizemedium = 0,
+                          orgsizesmall = 0,
+                          orgsizeunknown = 0,
+                          undergradmajorRelevant_to_Job = 0,
+                          yearscodeprobeginner = 1,
+                          yearscodeproexpert = 0,
+                          yearscodeprosenior = 0
+                          )
+
+
+predicted_salary <- predict(linear_reg, data_analyst_beginner_outOfCountry, interval = "prediction",
+                        level = 0.05)
+
+predicted_salary
+
+```
+
+If the person looks for a job outside the north american continent
+as a beginner, he/she is expected to get a salary of $40,928.04.
+
+
+================================================================================
+================================================================================
+================================================================================
+================================================================================
+================================================================================
+
+
+            
+                            CLASSIFICATION
+              
+
+#PART 2 - Classification (based on job satisfaction)
+
+```{r}
+
+job_sat_df <- read.csv("salaries.csv", header = TRUE, sep = ",")
+
+final_classification_df <- cbind(final_regression_df, job_sat_df[,c(7)])
+
+
+final_classification_df <- final_classification_df %>% setnames(old = "job_sat_df[, c(7)]", 
+                                                                new = "job_satisfaction")
+
+head(final_classification_df)
+
+
+ 
+```
+
+--------------------------------------------------------------------------------
+Change 'job_satisfaction' column to have
+[<=6] -- less_satisfied
+[>6] -- satisfied
+
+```{r}
+
+job_sat <- function(x){
+  if (x <= 6) {
+    return ("less_satisfied")
+  } 
+  else 
+  {
+    return("satisfied")
+  }
+}
+
+final_classification_df$job_satisfaction <- sapply(final_classification_df$job_satisfaction, job_sat)
+
+```
+
+
+```{r}
+
+table(final_classification_df$job_satisfaction)
+
+```
+
+##Create dummies for job satisfaction column
+```{r}
+
+job_sat_col <- subset(final_classification_df, select = c("job_satisfaction"))
+
+job_sat_dummy <- model.matrix(~., data = job_sat_col)
+
+job_sat_dummy <- subset(job_sat_dummy, select = -c(1))
+
+head(job_sat_dummy)
+
+```
+
+##Combine it with the dataframe
+```{r}
+
+final_classification_df <- cbind(subset(final_classification_df, select = -c(24)), job_sat_dummy)
+
+head(final_classification_df)
+
+```
+
+##Logistic regression Model
+```{r}
+
+logistic_reg = glm(job_satisfactionsatisfied ~., data = final_classification_df,
+                   family = binomial(link = "logit"))
+
+
+summary(logistic_reg)
+
+```
+
+##inrepretation:
+Deviance Residuals represent that it should be normally distributed around 
+zero by the range of -2.0129 to 1.8485.
+
+Positive coefficients indicate an increase in the job satisfaction.
+
+The difference of Null Deviance and Residual Deviance show how well the model 
+is fitted by smaller value after fitting the model.
+
+
+
+###odds ratio
+```{r}
+
+cbind(OddsRatio = exp(coef(logistic_reg)), exp(confint(logistic_reg)))
+
+```
+
+##Interpretation:
+These odds ratio represent insights into how different variables are associated 
+with job satisfaction. For example, Being a data scientist increases the 
+odds of the person being satisfied with their job by 16.35%, or 
+having completed a PhD increases the odds of the person being satisfied with 
+their job by 33.59% because the salary tends to be way higher than their peers..
+
+
+#refining logistic regression model
+
+```{r}
+
+stepwise_model <- stepAIC(logistic_reg, direction = "backward",
+                          trace = FALSE)
+
+summary(stepwise_model)
+
+```
+##Interpretation:
+The range of residuals is from -1.9983 to 1.8525. It shows better normally
+distribution around zero that before.
+
+A one-unit increase in salary (convertedcomp) is associated with an increase of 
+approximately 0.000005933 in the log-odds of job satisfaction.
+Belonging to "Other" countries is associated with a decrease of approximately
+0.119 in the log-odds of job satisfaction.
+Having a Master's or PhD degree is associated with changes in the log-odds of 
+job satisfaction, but only edlevelPhD is statistically significant.
+
+Smaller values of Residual deviance in comparison of Null deviance suggests a 
+better fit.  and indicating an improvement in model fit.
+
+AIC value is decreased compared to the previous model, representing improved 
+model performance.
+
+
+###odds ratio
+```{r}
+
+cbind(OddsRatio = exp(coef(stepwise_model)), exp(confint(stepwise_model)))
+
+```
+##Interpretation:
+These odds ratio represent insights into how different variables are associated 
+with job satisfaction. For example, Being a data scientist increases the 
+odds of the person being satisfied with their job by 15.73%, or 
+having completed a PhD increases the odds of the person being satisfied with 
+their job by 32.44% because the salary tends to be way higher than their peers...
+These odds are from the improved model...
+
+Looking at the odds ratios over the years the job satisfaction tends to reduce...
+This might be because of increasing competitveness in the Data field..
+(i.e) The odds of a person being satisfied with his/her job in the year 2020,
+drastically dropped by around 75% compared to 2017...
+
+
+
+======================================****======================================
