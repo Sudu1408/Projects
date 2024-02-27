@@ -1,0 +1,7 @@
+mockaroo schema : https://mockaroo.com/b99c68a0
+
+mongo SRV : mongodb+srv://<username>:<password>@clinicmanagementsystem.ad5od8a.mongodb.net/?retryWrites=true&w=majority
+
+Mongo Our Access : mongodb+srv://TeamSAM:csis3300@clinicmanagementsystem.ad5od8a.mongodb.net/?retryWrites=true&w=majority
+
+Mongo Prof Access : mongodb+srv://Professor:csis3300@clinicmanagementsystem.ad5od8a.mongodb.net/?retryWrites=true&w=majority

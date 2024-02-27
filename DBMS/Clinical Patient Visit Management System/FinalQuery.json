@@ -1,0 +1,45 @@
+//Query 1
+
+db.VisitRecords.aggregate([​
+    {$group: {_id: {"department": "$departmentBlock"},​
+              averageWaitTime: { $avg: "$waitTime" },​
+              averageTimeExceeded: { $avg: "$timeExceeded" }}},​
+    {$sort: { averageWaitTime: -1 }}
+])​
+
+//Query 2
+
+db.VisitRecords.aggregate([​
+    {$group: {_id: {"doctorName": "$doctor.Name",​
+              "department": "$departmentBlock"},​
+              averageWaitTime: { $avg: "$waitTime" }}},
+    {$sort: { averageWaitTime: -1 }},
+    {$limit : 5}​
+])​
+
+//Query 3
+
+db.VisitRecords.aggregate([ ​
+     {$group: {_id: {"department" : "$departmentBlock", ​
+             "dayOfWeek" : "$date.DayOfWeek"}, ​
+             totalVisits : { $sum : 1 }}}, ​
+     {$sort: { totalVisits : -1 }},​
+     {$group: {_id: {"department"  : "$_id.department"}, ​
+             busiestDayofWeek: { $first : "$_id.dayOfWeek" }, ​
+             numberOfVisits: { $first : "$totalVisits" }}}​,
+     {$sort: { numberOfVisits : -1 }}
+]) ​
+
+//Query 4
+
+db.VisitRecords.aggregate([ ​
+     {$group: {_id: {dayOfWeek : "$date.DayOfWeek"}, ​
+          averageDuration : {$avg:  ​
+               {$subtract : [ ​
+                    {$add : [{ $multiply: ["$actual.EndHour", 60 ] }, "$actual.EndMinute" ]}, ​
+                    {$add : [{ $multiply: [ "$actual.StartHour", 60 ] }, "$actual.StartMinute"]}​
+               ]}}​
+          }​
+     }, ​
+     {$sort: {averageDuration: -1}}
+])​

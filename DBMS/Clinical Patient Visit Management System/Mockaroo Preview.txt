@@ -1,0 +1,52 @@
+{
+  "_id": "6xFcmI7jVHDoCe5I",
+  "patientName": "Pall Scothern",
+  "patientDOB": "1943-08-02",
+  "patientAge": 80,
+  "patientPhone": "346-686-3170",
+  "insuranceNumber": "4T40TD2FE27",
+  "adminStaff": {
+    "Name": "Desirae Quinton",
+    "Phone": "888-264-0628",
+    "Email": "bmoorman0@purevolume.com"
+  },
+  "doctor": {
+    "Name": "Minne Shemmans",
+    "Phone": "728-959-0924",
+    "Email": "bmoorman0@dmoz.org"
+  },
+  "medicalStaff": {
+    "Name": "Bathsheba Moorman",
+    "Phone": "693-318-9139",
+    "Email": "bmoorman0@dagondesign.com"
+  },
+  "departmentBlock": "Dermatology",
+  "roomNumber": 4,
+  "date": {
+    "Date": "2021-03-29",
+    "Day": "29",
+    "Month": "March",
+    "Year": "2021",
+    "DayOfWeek": "Monday"
+  },
+  "appointment": {
+    "StartTime": "17:37",
+    "StartHour": 17,
+    "StartMinute": 37,
+    "EndTime": "18:07",
+    "EndHour": 18,
+    "EndMinute": 7
+  },
+  "actual": {
+    "StartTime": "17:44",
+    "StartHour": 17,
+    "StartMinute": 44,
+    "EndTime": "18:14",
+    "EndHour": 18,
+    "EndMinute": 14
+  },
+  "TimeOfDay": "Evening",
+  "waitTime": 7,
+  "timeExceeded": 7,
+  "paymentType": "Insurance"
+}
